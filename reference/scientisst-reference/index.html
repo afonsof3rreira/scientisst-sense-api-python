@@ -487,6 +487,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#scientisst.scientisst.ScientISST.number_of_frames" class="md-nav__link">
+    number_of_frames()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#scientisst.scientisst.ScientISST.read" class="md-nav__link">
     read()
   </a>
@@ -646,6 +653,13 @@
           <li class="md-nav__item">
   <a href="#scientisst.scientisst.ScientISST.disconnect" class="md-nav__link">
     disconnect()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scientisst.scientisst.ScientISST.number_of_frames" class="md-nav__link">
+    number_of_frames()
   </a>
   
 </li>
@@ -1396,6 +1410,19 @@ ScientISST        </code>
             <span class="bp">self</span><span class="o">.</span><span class="n">__socket</span><span class="o">.</span><span class="n">setblocking</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">__serial</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">TIMEOUT_IN_SECONDS</span>
+
+    <span class="k">def</span> <span class="nf">number_of_frames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Gets the number of frames of an instantiated ScientISST device.</span>
+
+<span class="sd">            Returns:</span>
+<span class="sd">                self.__num_frames (int): Number of frames</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ContactingDeviceError: If there is an error contacting the device.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__num_frames</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ContactingDeviceError</span><span class="p">()</span>
 </code></pre></div>
         </details>
 
@@ -1736,6 +1763,60 @@ ScientISST        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">__serial</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__serial</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;Disconnected</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+        </details>
+    </div>
+
+  </div>
+
+
+
+  <div class="doc doc-object doc-method">
+
+
+
+<h3 class="doc doc-heading" id="scientisst.scientisst.ScientISST.number_of_frames">
+<code class="highlight language-python"><span class="n">number_of_frames</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></code>
+
+
+</h3>
+
+    <div class="doc doc-contents ">
+
+      <p>Gets the number of frames of an instantiated ScientISST device.</p>
+<div class="highlight"><pre><span></span><code>Returns:
+    self.__num_frames (int): Number of frames
+</code></pre></div>
+
+<p><strong>Exceptions:</strong></p>
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+        <td><code>ContactingDeviceError</code></td>
+        <td><p>If there is an error contacting the device.</p></td>
+      </tr>
+  </tbody>
+</table>
+        <details class="quote">
+          <summary>Source code in <code>scientisst/scientisst.py</code></summary>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">number_of_frames</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Gets the number of frames of an instantiated ScientISST device.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            self.__num_frames (int): Number of frames</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ContactingDeviceError: If there is an error contacting the device.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__num_frames</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ContactingDeviceError</span><span class="p">()</span>
 </code></pre></div>
         </details>
     </div>
