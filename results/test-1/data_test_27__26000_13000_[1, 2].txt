@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "C:/Users/afons/PycharmProjects/scientisst-sense-api-python/AAAA_test_script.py", line 194, in main
+    frames = scientisst.read(convert=args.convert)
+  File "C:\Users\afons\PycharmProjects\scientisst-sense-api-python\scientisst\scientisst.py", line 253, in read
+    while not self.__checkCRC4(bf, self.__packet_size):
+  File "C:\Users\afons\PycharmProjects\scientisst-sense-api-python\scientisst\scientisst.py", line 579, in __checkCRC4
+    b = data[i]
+IndexError: list index out of range
