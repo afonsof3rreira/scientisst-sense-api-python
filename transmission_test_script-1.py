@@ -54,9 +54,6 @@ duration = 30  # seconds
 fs_l = [1000 * i for i in range(1, 18, 2)]
 ch_nrs_l = [i for i in range(1, 7)]
 
-# compute sent nr of bytes per sample
-data_bytes = [ceil(3 + 1.5 * i) for i in range(1, 7)]
-
 output_filenames = []
 params_list = []
 transfer_rates = []
@@ -64,10 +61,10 @@ transfer_rates = []
 
 for sf in fs_l:
     for j in range(1, len(ch_nrs_l) + 1):
-        print(ch_nrs_l)
-        print(j)
 
-        data_sz = ch_nrs_l[j - 1]
+        # compute sent nr of bytes per sample
+        data_sz = ceil(3 + (1.5 * ch_nrs_l[j - 1]))
+
         output_filenames.append("CHs_{}_sfs_{}".format(j, sf))
 
         analog_param = []

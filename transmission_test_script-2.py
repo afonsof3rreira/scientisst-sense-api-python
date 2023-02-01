@@ -14,15 +14,16 @@ test_path = os.path.join(main_saving_path, dir_name)
 
 df = pd.DataFrame(columns=['DR', 'Fs', 'CHs', 'Diffs'])
 
-result_filename = 'multi_param_test'
+result_filename = 'multi_param_test.txt'
 
 for root, _, dirs in os.walk(test_path):
 
     for file in dirs:
 
-        if file != result_filename:
+        if file != result_filename and file != '.gitignore':
 
             file_str_l = file.split("_")
+
             dr = int(file_str_l[4])
             fs = file_str_l[5]
             sub_str = file_str_l[6]
@@ -68,4 +69,4 @@ for root, _, dirs in os.walk(test_path):
 df = df.sort_values(by=['DR'])
 
 # save data frame with test-results
-df.to_csv(os.path.join(test_path, '{}.txt'.format(result_filename)))
+df.to_csv(os.path.join(test_path, result_filename))
