@@ -440,11 +440,7 @@ class ScientISST:
                             mid_frame_flag = 1
                         else:
                             f.a[index] = (
-                                int.from_bytes(
-<<<<<<< HEAD
-                                    bf[byte_it : byte_it + 2], byteorder="little"
-=======
-                                    bf[byte_it: byte_it + 2], byteorder="little"
+                                int.from_bytes(bf[byte_it : byte_it + 2], byteorder="little",
                                 )
                                 >> 4
                             )
@@ -506,7 +502,6 @@ class ScientISST:
                             f.a[index] = (
                                 int.from_bytes(
                                     bf[byte_it: byte_it + 2], byteorder="little"
->>>>>>> 80b48d2 (adapted to sympathia (2xEDA + ACC))
                                 )
                                 >> 4
                             )
