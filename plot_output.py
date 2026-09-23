@@ -1,9 +1,8 @@
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
-    filename = sys.argv[1]
+    filename = "output.csv" # substitute it with your filename here
     signal = np.loadtxt(filename)
 
     plt.figure()
@@ -16,7 +15,6 @@ if __name__ == "__main__":
         plt.plot((signal[:, channel]))
         plt.title(channel)
         plt.grid()
-
         c += 1
 
     plt.show()

@@ -3,6 +3,7 @@ import sys
 
 # if sys.platform == "linux":
 import socket
+import select
 
 # else:
 import serial
@@ -57,6 +58,7 @@ class ScientISST:
             api != API_MODE_SCIENTISST
             and api != API_MODE_JSON
             and api != API_MODE_BITALINO
+            and api != API_MODE_SCIENTISST_V2
         ):
             raise InvalidParameterError()
 
@@ -64,6 +66,14 @@ class ScientISST:
         self.address = address
         self.serial_speed = serial_speed
         self.__log = log
+
+        self.__serial = None
+        self.__socket = None
+        self.__num_chs = 0
+        self.__api_mode = 1
+        self.__sample_rate = None
+        self.__chs = [None] * 8
+        self.__log = False
 
         # Setup socket in function of com_mode argument
         self.__setupSocket()
@@ -97,7 +107,7 @@ class ScientISST:
         if self.__api_mode == API_MODE_BITALINO:
             header = "BITalino"
         else:
-            header = "ScientISST"
+            header = ""
         header_len = len(header)
 
         cmd = b"\x07"
@@ -109,9 +119,9 @@ class ScientISST:
             raise ContactingDeviceError()
 
         index = result.index(b"\x00")
-        version = result[header_len : index - 1].decode("utf-8")
+        version = result[header_len: index].decode("utf-8")
 
-        self.__adc1_chars = EspAdcCalChars(result[index + 1 :])
+        self.__adc1_chars = EspAdcCalChars(result[index + 1:])
 
         if print:
             sys.stdout.write("ScientISST version: {}\n".format(version))
@@ -164,7 +174,7 @@ class ScientISST:
             raise DeviceNotIdleError()
 
         if not channels:  # channels is empty
-            chMask = 0xFF  #  all 8 analog channels
+            chMask = 0xFF  # all 8 analog channels
             self.__num_chs = 8
         else:
             chMask = 0
@@ -352,12 +362,11 @@ class ScientISST:
     def read(self, curr_dac_value=None, convert=True, matrix=False):
         """
         # AI1: ACC (1)
-        # AI2: ACC (2)
-        # AI3: ACC (3)
-        # AI4: DAC (WORKAROUND)
-        # AI6: canal extra (e.g., EDA exterior ao device ou PPG)
+        # AI2: DAC [WORKAROUND]
+        # AI3: ACC (2)
+        # AI6: canal extra (e.g., PPG)
         # AX7: EDA
-        # channels = [1,2,3,4,6,7]
+        # channels = [1,2,3,6,7]
 
         Reads acquisition frames from the device.
 
@@ -385,7 +394,7 @@ class ScientISST:
         result = list(self.__recv(self.__bytes_to_read))
         start = 0
         for it in range(self.__num_frames):
-            bf = result[start : start + self.__packet_size]
+            bf = result[start: start + self.__packet_size]
             mid_frame_flag = 0
 
             #  if CRC check failed, try to resynchronize with the next valid frame
@@ -398,7 +407,7 @@ class ScientISST:
 
                 result += result_tmp
                 start += 1
-                bf = result[start : start + self.__packet_size]
+                bf = result[start: start + self.__packet_size]
 
             f = Frame(self.__num_chs)
             frames.append(f)
@@ -421,18 +430,22 @@ class ScientISST:
                     if curr_ch == AX1 or curr_ch == AX2:
                         f.a[index] = (
                             int.from_bytes(
-                                bf[byte_it : byte_it + 4], byteorder="little"
+                                bf[byte_it: byte_it + 4], byteorder="little"
                             )
                             & 0xFFFFFF
                         )
                         byte_it += 3
+                        if convert:
+                            f.mv[index] = (
+                                (f.a[index]) * (3.3*2) / (pow(2, 24) - 1))*1000
+                            f.mv[index] = round(f.mv[index], 3)
 
                     # If it's an AI channel
                     else:
                         if not mid_frame_flag:
                             f.a[index] = (
                                 int.from_bytes(
-                                    bf[byte_it : byte_it + 2], byteorder="little"
+                                    bf[byte_it: byte_it + 2], byteorder="little"
                                 )
                                 & 0xFFF
                             )
@@ -441,9 +454,6 @@ class ScientISST:
                         else:
                             f.a[index] = (
                                 int.from_bytes(
-<<<<<<< HEAD
-                                    bf[byte_it : byte_it + 2], byteorder="little"
-=======
                                     bf[byte_it: byte_it + 2], byteorder="little"
                                 )
                                 >> 4
@@ -452,18 +462,13 @@ class ScientISST:
                             mid_frame_flag = 0
 
                         # Add this workaround to replace AI2 values (ignore) with DAC values
-                        if curr_ch == AI4:
+                        if curr_ch == AI2:
                             f.a[index] = curr_dac_value
 
                         if convert:
-                            if curr_ch != AI4:
-                                f.mv[index] = self.__adc1_chars.esp_adc_cal_raw_to_voltage(
-                                    f.a[index])
-
-                            # workaround (no conversion for our DAC signal)
-                            else:
-                                f.mv[index] = f.a[index]
-
+                            f.mv[index] = self.__adc1_chars.esp_adc_cal_raw_to_voltage(
+                                f.a[index]
+                            )
             elif self.__api_mode == API_MODE_SCIENTISST_V2:
                 # Get timestamp (us) and IO states
                 f.seq = (bf[-1] << 28) | (bf[-2] << 20) | (bf[-3] <<
@@ -506,7 +511,6 @@ class ScientISST:
                             f.a[index] = (
                                 int.from_bytes(
                                     bf[byte_it: byte_it + 2], byteorder="little"
->>>>>>> 80b48d2 (adapted to sympathia (2xEDA + ACC))
                                 )
                                 >> 4
                             )
@@ -713,6 +717,10 @@ class ScientISST:
                 self.__serial = serial.Serial(
                     self.address, self.serial_speed, timeout=TIMEOUT_IN_SECONDS
                 )
+        elif self.com_mode == COM_MODE_SERIAL:
+            self.__serial = serial.Serial(
+                self.address, self.serial_speed, timeout=TIMEOUT_IN_SECONDS
+            )
         elif self.com_mode == COM_MODE_TCP_SERVER:
             if not self.address.isdigit():
                 raise InvalidAddressError()
@@ -773,7 +781,31 @@ class ScientISST:
                 ) / 8  # -4 because 4 bits can go in the I/0 byte
             # for the I/Os and seq+crc bytes
             packet_size += 3
+        elif self.__api_mode == API_MODE_SCIENTISST_V2:
+            num_intern_active_chs = 0
+            num_extern_active_chs = 0
 
+            for ch in self.__chs:
+                if ch:
+                    # Add 24bit channel's contributuion to packet size
+                    if ch == AX1 or ch == AX2:
+                        num_extern_active_chs += 1
+                    # Count 12bit channels
+                    else:
+                        num_intern_active_chs += 1
+
+            # Add 24bit channel's contributuion to packet size
+            packet_size = 3 * num_extern_active_chs
+
+            # Add 12bit channel's contributuion to packet size
+            if not (num_intern_active_chs % 2):  # If it's an even number
+                packet_size += (num_intern_active_chs * 12) / 8
+            else:
+                packet_size += (
+                    (num_intern_active_chs * 12) - 4
+                ) / 8  # -4 because 4 bits can go in the I/0 byte
+            # for the I/Os and seq+crc bytes
+            packet_size += 6
         else:
             raise NotSupportedError()
 
@@ -783,7 +815,7 @@ class ScientISST:
         if self.__num_chs and self.__num_chs != 0:
             raise DeviceNotIdleError()
 
-        if api <= 0 or api > 3:
+        if api <= 0 or api > 3 and api != 14:
             raise InvalidParameterError()
 
         self.__api_mode = api
@@ -796,20 +828,40 @@ class ScientISST:
     def __checkCRC4(self, data, length):
         CRC4tab = [0, 3, 6, 5, 12, 15, 10, 9, 11, 8, 13, 14, 7, 4, 1, 2]
         crc = 0
-        for i in range(length - 2):
-            b = data[i]
-            crc = CRC4tab[crc] ^ (b >> 4)
-            crc = CRC4tab[crc] ^ (b & 0x0F)
+        if self.__api_mode == API_MODE_SCIENTISST_V2:
+            for i in range(length - 5):
+                b = data[i]
+                crc = CRC4tab[crc] ^ (b >> 4)
+                crc = CRC4tab[crc] ^ (b & 0x0F)
+            crc = CRC4tab[crc] ^ (data[-5] >> 4)  # First 4 bits
+            crc = CRC4tab[crc] ^ (data[-4] >> 4)
+            crc = CRC4tab[crc] ^ (data[-4] & 0x0F)
+            crc = CRC4tab[crc] ^ (data[-3] >> 4)
+            crc = CRC4tab[crc] ^ (data[-3] & 0x0F)
+            crc = CRC4tab[crc] ^ (data[-2] >> 4)
+            crc = CRC4tab[crc] ^ (data[-2] & 0x0F)
+            crc = CRC4tab[crc] ^ (data[-1] >> 4)
+            crc = CRC4tab[crc] ^ (data[-1] & 0x0F)
 
-        # CRC for seq
-        crc = CRC4tab[crc] ^ (data[-2] >> 4)        #First 4 bits
-        #Last 8 bits of seq
-        crc = CRC4tab[crc] ^ (data[-1] >> 4)
-        crc = CRC4tab[crc] ^ (data[-1] & 0x0F)
+            crc = CRC4tab[crc]
 
-        crc = CRC4tab[crc]
+            return crc == (data[-5] & 0x0F)
 
-        return crc == (data[-2] & 0x0F)
+        else:
+            for i in range(length - 2):
+                b = data[i]
+                crc = CRC4tab[crc] ^ (b >> 4)
+                crc = CRC4tab[crc] ^ (b & 0x0F)
+            # CRC for seq
+            crc = CRC4tab[crc] ^ (data[-2] >> 4)  # First 4 bits
+
+            # Last 8 bits of seq
+            crc = CRC4tab[crc] ^ (data[-1] >> 4)
+            crc = CRC4tab[crc] ^ (data[-1] & 0x0F)
+
+            crc = CRC4tab[crc]
+
+            return crc == (data[-2] & 0x0F)
 
     def __send(self, command, nrOfBytes=0):
         """
@@ -852,12 +904,23 @@ class ScientISST:
         """
         Receive data
         """
-        result = None
+        result = b""
         if self.__socket:
-            if waitall_flag:
-                result = self.__socket.recv(nrOfBytes, socket.MSG_WAITALL)
-            else:
-                result = self.__socket.recv(nrOfBytes)
+            # We have to use a select here with a single socket because we can't apply a timeout in any other way
+            ready = select.select([self.__socket], [],
+                                  [], 5)  # 10 seconds timeout
+            if ready[0]:
+                if waitall_flag:
+                    remaining = nrOfBytes
+                    while remaining > 0:
+                        ready = select.select([self.__socket], [], [], 10)
+                        if not ready[0]:
+                            raise ContactingDeviceError()
+                        temp = self.__socket.recv(remaining)
+                        result += temp
+                        remaining = nrOfBytes - len(result)
+                else:
+                    result = self.__socket.recv(nrOfBytes)
         elif self.__serial:
             result = self.__serial.read(nrOfBytes)
         else:
@@ -870,7 +933,8 @@ class ScientISST:
                     )
                 )
             else:
-                sys.stdout.write("{} bytes received: {}\n".format(1, result.hex()))
+                sys.stdout.write(
+                    "{} bytes received: {}\n".format(1, result.hex()))
         return result
 
     def __clear(self):

@@ -44,7 +44,10 @@ def main():
 
     args.channels = sorted(map(int, args.channels.split(",")))
 
-    scientisst = ScientISST(address, com_mode=args.mode, log=args.log)
+    api_mode = API_MODE_DICT[args.api]
+
+    scientisst = ScientISST(address, com_mode=args.mode,
+                            log=args.log, api=api_mode)
 
     dac_value = 150  # or any other value you prefer
 
@@ -59,6 +62,7 @@ def main():
                 args.convert,
                 __version__,
                 firmware_version,
+                args.api
             )
         if args.stream:
             from sense_src.stream_lsl import StreamLSL
@@ -91,7 +95,8 @@ def main():
 
         try:
             if args.verbose:
-                header = "\t".join(get_header(args.channels, args.convert)) + "\n"
+                header = "\t".join(get_header(
+                    args.channels, args.convert, args.api)) + "\n"
                 sys.stdout.write(header)
             while not stop_event.is_set():
 
@@ -107,7 +112,6 @@ def main():
                     script.put(frames)
                 if args.verbose:
                     sys.stdout.write("{}\n".format(frames[0]))
-
         except KeyboardInterrupt:
             if args.duration and timer:
                 timer.cancel()
