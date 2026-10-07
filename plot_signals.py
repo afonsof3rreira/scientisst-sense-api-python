@@ -12,8 +12,10 @@ root_path = sys.argv[0]
 root_path, _ = os.path.split(root_path)
 data_path = os.path.join(root_path, 'data')
 signals_path = os.path.join(data_path, "signals")
-coeff_path = os.path.join(data_path, 'TF', 'fit_coeffs_4-1A__All_max.csv')
-df_coeffs = pd.read_csv(coeff_path, comment='#')
+
+# EDA Sensor adjustment code lines (*)
+coeff_path = os.path.join(data_path, 'TF', 'fit_coeffs_4-1A__All_max.csv') # (*)
+df_coeffs = pd.read_csv(coeff_path, comment='#') # (*)
 
 FS = 1000.
 
@@ -49,33 +51,29 @@ for s_filename in s_fnames:
                                sympathia_signals["AI3"]])
 
     acc_filt_axes = np.column_stack(acc_multi_filtering(acc_raw_axes, fs=int(FS)))
-    acc_vm = np.linalg.norm(acc_filt_axes, axis=1)
+    acc_vm = np.linalg.norm(acc_filt_axes, axis=1)  # 3-axial ACC signals become 1 signal, the accelerometer's Vector Magnitude
 
-    eda_wrist, crop_idx = raw_to_conductance(eda_wrist, dac_sym, df_coeffs, crop_leading_nans=False)
+    eda_wrist, crop_idx = raw_to_conductance(eda_wrist, dac_sym, df_coeffs, crop_leading_nans=False) # (*)
     eda_fingers = bitalino_eda_to_us(eda_fingers, n_bits=12, vcc=3.3)
 
+    # (*) ============================================================
     eda_wrist, eda_fingers, acc_vm, dac_sym = crop_arrays(
-        crop_idx, eda_wrist, eda_fingers, acc_vm, dac_sym)
+        crop_idx, eda_wrist, eda_fingers, acc_vm, dac_sym) # (*)
 
     # --- second crop: DAC settling + tolerance ---
-    settle_idx, transitions, intervals_s = dac_settling_time(dac_sym)
-    CROP_TOL_S = 10
-    crop_settle = settle_idx + int(CROP_TOL_S * FS)
+    settle_idx, transitions, intervals_s = dac_settling_time(dac_sym) # (*)
+    CROP_TOL_S = 10 # (*)
+    crop_settle = settle_idx + int(CROP_TOL_S * FS) # (*)
 
     eda_wrist, eda_fingers, acc_vm, dac_sym = crop_arrays(
-        crop_settle, eda_wrist, eda_fingers, acc_vm, dac_sym)
+        crop_settle, eda_wrist, eda_fingers, acc_vm, dac_sym) # (*)
+    # (*) ============================================================
 
     # filter AFTER cropping, so the settling transient isn't smeared into the kept data
     eda_wrist = filter_eda(eda_wrist)
     eda_fingers = filter_eda(eda_fingers)
 
     time_arr = np.arange(len(eda_wrist)) * time_factor
-
-    saturation_type = 'Sensor'  # ADC or Sensor
-    if saturation_type == 'Sensor':
-        low_lim, up_lim = 300_000, 7_000_000
-    else:
-        low_lim, up_lim = 5_000, 8_360_000
 
     fig, axes = plt.subplots(3, 1, figsize=(16, 6), sharex=True)
     fig.suptitle(f"Subject {s_filename}")
