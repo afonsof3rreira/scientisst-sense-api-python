@@ -264,3 +264,21 @@ def list_csv_files_in_dir(dir_path: str):
     csv_files = sorted(csv_files, key=lambda x: x[1])
 
     return csv_files
+
+def check_nseq(nseq, period=4096, step=1):
+    """
+    Check continuity of a wrapping sequence counter (0..period-1).
+
+    Returns
+    -------
+    n_errors : int        number of discontinuities (diff != step)
+    idx      : ndarray    indices i where nseq[i] -> nseq[i+1] is discontinuous
+    lost     : ndarray    estimated missing samples at each discontinuity
+                          (0 = duplicate/repeated sample, <0 not possible after mod)
+    """
+    nseq = np.asarray(nseq, dtype=np.int64)
+    d = np.diff(nseq) % period          # wraparound 4095->0 becomes 1
+    bad = d != step
+    idx = np.flatnonzero(bad)
+    lost = (d[bad] - step) % period     # samples skipped at each gap
+    return int(bad.sum()), idx, lost

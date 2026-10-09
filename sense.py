@@ -14,7 +14,6 @@ from sense_src.custom_script import get_custom_script, CustomScript
 from sense_src.device_picker import DevicePicker
 from sense_src.file_writer import *
 
-
 def run_scheduled_task(duration, stop_event):
     def stop(stop_event):
         stop_event.set()
@@ -22,7 +21,6 @@ def run_scheduled_task(duration, stop_event):
     timer = Timer(duration, stop, [stop_event])
     timer.start()
     return timer
-
 
 def main():
     arg_parser = ArgParser()

@@ -2,11 +2,11 @@ import os
 import sys
 import pandas as pd
 import numpy as np
-from aux.bit_eda_sensor import bitalino_eda_to_us
-from aux.funcs import get_signals_as_dict
-from aux.signal_processing import filter_eda, acc_multi_filtering, dac_settling_time, crop_arrays, normalize
 import matplotlib.pyplot as plt
-from aux.sym_eda_sensor import raw_to_conductance
+from aux_files.bit_eda_sensor import bitalino_eda_to_us
+from aux_files.funcs import get_signals_as_dict, check_nseq
+from aux_files.signal_processing import acc_multi_filtering, crop_arrays, dac_settling_time, filter_eda, normalize
+from aux_files.sym_eda_sensor import raw_to_conductance
 
 root_path = sys.argv[0]
 root_path, _ = os.path.split(root_path)
@@ -14,8 +14,10 @@ data_path = os.path.join(root_path, 'data')
 signals_path = os.path.join(data_path, "signals")
 
 # EDA Sensor adjustment code lines (*)
-coeff_path = os.path.join(data_path, 'TF', 'fit_coeffs_4-1A__All_max.csv') # (*)
-df_coeffs = pd.read_csv(coeff_path, comment='#') # (*)
+# (*) ============================================================
+coeff_path = os.path.join(data_path, 'TF', 'fit_coeffs_4-1A__All_max.csv')
+df_coeffs = pd.read_csv(coeff_path, comment='#')
+# (*) ============================================================
 
 FS = 1000.
 
@@ -39,12 +41,17 @@ for s_filename in s_fnames:
 
     sym_path = os.path.join(signals_path, s_filename)
     signals = get_signals_as_dict(sym_path, device_name='sympathia')
+
     sympathia_signals = signals['sympathia']
 
     # From now on, it's the standard part of the pipeline:
-    dac_sym = sympathia_signals['AI4']
+    dac_sym = sympathia_signals['AI2']
     eda_fingers = sympathia_signals['AI6']
     eda_wrist = sympathia_signals['AX7']
+    nseq = sympathia_signals['NSeq']
+
+    n_err, idx, lost = check_nseq(nseq)
+    print(f"{n_err} discontinuities, {lost.sum()} samples lost")
 
     acc_raw_axes = np.asarray([sympathia_signals["AI1"],
                                sympathia_signals["AI2"],
@@ -57,16 +64,16 @@ for s_filename in s_fnames:
     eda_fingers = bitalino_eda_to_us(eda_fingers, n_bits=12, vcc=3.3)
 
     # (*) ============================================================
-    eda_wrist, eda_fingers, acc_vm, dac_sym = crop_arrays(
-        crop_idx, eda_wrist, eda_fingers, acc_vm, dac_sym) # (*)
-
-    # --- second crop: DAC settling + tolerance ---
-    settle_idx, transitions, intervals_s = dac_settling_time(dac_sym) # (*)
-    CROP_TOL_S = 10 # (*)
-    crop_settle = settle_idx + int(CROP_TOL_S * FS) # (*)
-
-    eda_wrist, eda_fingers, acc_vm, dac_sym = crop_arrays(
-        crop_settle, eda_wrist, eda_fingers, acc_vm, dac_sym) # (*)
+    # eda_wrist, eda_fingers, acc_vm, dac_sym = crop_arrays(
+    #     crop_idx, eda_wrist, eda_fingers, acc_vm, dac_sym) # (*)
+    #
+    # # --- second crop: DAC settling + tolerance ---
+    # settle_idx, transitions, intervals_s = dac_settling_time(dac_sym) # (*)
+    # CROP_TOL_S = 10 # (*)
+    # crop_settle = settle_idx + int(CROP_TOL_S * FS) # (*)
+    #
+    # eda_wrist, eda_fingers, acc_vm, dac_sym = crop_arrays(
+    #     crop_settle, eda_wrist, eda_fingers, acc_vm, dac_sym) # (*)
     # (*) ============================================================
 
     # filter AFTER cropping, so the settling transient isn't smeared into the kept data
