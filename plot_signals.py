@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import pandas as pd
 import numpy as np
@@ -19,25 +20,31 @@ coeff_path = os.path.join(data_path, 'TF', 'fit_coeffs_4-1A__All_max.csv')
 df_coeffs = pd.read_csv(coeff_path, comment='#')
 # (*) ============================================================
 
-FS = 1000.
+#FS = 1000.
 
 time_scale = 's' # or 'm' or ms
 
-if time_scale == 'm':
-    time_factor = 1 / 60_000
-elif time_scale == 's':
-    time_factor = 1 / 1000
-else:
-    time_factor = 1
+#if time_scale == 'm':
+#    time_factor = 1 / 60_000
+#elif time_scale == 's':
+#    time_factor = 1 / 1000
+#else:
+#    time_factor = 1
 
 figures_path = os.path.join(root_path, "figures")
 os.makedirs(figures_path, exist_ok=True)
 
-s_fnames = [x for x in os.listdir(signals_path) if x.endswith(".csv")]
+#s_fnames = [x for x in os.listdir(signals_path) if x.endswith(".csv")]
+s_fnames = ["BE4A_1000Hz_20261010_121317.csv"]
 
 for s_filename in s_fnames:
     clean_fname = s_filename.split('.csv')[0]
     print(f"Signal {clean_fname}")
+    
+    match = re.search(r"_(\d+)Hz", clean_fname)
+    FS = float(match.group(1)) if match else 1000.
+    time_factor = {'m': 1 / (60 * FS), 's': 1 / FS}.get(time_scale, 1)
+    print(f"FS = {FS} Hz")
 
     sym_path = os.path.join(signals_path, s_filename)
     signals = get_signals_as_dict(sym_path, device_name='sympathia')
@@ -77,8 +84,8 @@ for s_filename in s_fnames:
     # (*) ============================================================
 
     # filter AFTER cropping, so the settling transient isn't smeared into the kept data
-    eda_wrist = filter_eda(eda_wrist)
-    eda_fingers = filter_eda(eda_fingers)
+    eda_wrist = filter_eda(eda_wrist, fs = FS)
+    eda_fingers = filter_eda(eda_fingers, fs = FS)
 
     time_arr = np.arange(len(eda_wrist)) * time_factor
 
@@ -92,14 +99,14 @@ for s_filename in s_fnames:
     axes[0].set_title("EDA signals")
 
     axes[1].plot(time_arr, acc_vm,
-                 linewidth=0.8, color="#d62728")
+                linewidth=0.8, color="#d62728")
     axes[1].set_ylabel("[a.u.]")
     axes[1].set_title("ACC VM")
 
     axes[2].plot(time_arr, dac_sym)
     axes[2].set_ylabel("[0-255]")
     axes[2].set_xlabel(f"Time [{time_scale}]")
-
+    
     fig.savefig(os.path.join(figures_path, f"{clean_fname}_plot.png"), dpi=150)
     fig.tight_layout()
     plt.show()
