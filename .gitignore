@@ -8,4 +8,3 @@ site/
 .DS_Store
 *.egg-info
 /results/test-1/.gitignore
-/data/signals/
