@@ -127,6 +127,8 @@ def main():
                 if args.verbose:
                     sys.stdout.write("{}\n".format(frames[0]))
 
+                tick += 1
+
         except KeyboardInterrupt:
             if args.duration and timer:
                 timer.cancel()

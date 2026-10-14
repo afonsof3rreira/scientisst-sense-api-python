@@ -52,7 +52,7 @@ for s_filename in s_fnames:
     sympathia_signals = signals['sympathia']
 
     # From now on, it's the standard part of the pipeline:
-    dac_sym = sympathia_signals['AI2']
+    dac_sym = sympathia_signals['AI4']  # DAC is written into AI4 by ScientISST.read()
     print(np.unique(dac_sym))
     eda_fingers = sympathia_signals['AI6']
     eda_wrist = sympathia_signals['AX7']

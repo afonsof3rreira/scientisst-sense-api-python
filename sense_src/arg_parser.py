@@ -70,7 +70,7 @@ class ArgParser:
             "--lsl",
             dest="stream",
             action="store_true",
-            default=True,
+            default=False,
             help="stream data using Lab Streaming Layer protocol. Use `python -m pylsl.examples.ReceiveAndPlot` to view stream",
         )
         self.parser.add_argument(
@@ -85,7 +85,7 @@ class ArgParser:
             "--quiet",
             action="store_false",
             dest="verbose",
-            default=True,
+            default=False,
             help="don't print ScientISST frames",
         )
         self.parser.add_argument(

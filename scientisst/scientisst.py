@@ -334,11 +334,10 @@ class ScientISST:
 
         if tick % 5 == 0:
 
-            # we extract channel AX7 (index 6 in the frame) to get the EDA signal
-            eda_signal = self.extract_subchunk_from_frame(frames, idx_extract=6)
-            mean_eda = np.mean(eda_signal)
-
-            self.scale_factor = 10 ** 3
+            # EDA is on AX7 (AX1 constant); read it from f.a by its position in the channel list,
+            # so it doesn't depend on to_matrix() layout or on convert=True
+            ax_idx = self.__chs.index(AX1)
+            mean_eda = np.mean([f.a[ax_idx] for f in frames])
 
             dac_condition = 0 < dac_value < 255
             if (mean_eda < 300000) and dac_condition:
