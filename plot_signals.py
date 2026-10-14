@@ -35,7 +35,7 @@ figures_path = os.path.join(root_path, "figures")
 os.makedirs(figures_path, exist_ok=True)
 
 #s_fnames = [x for x in os.listdir(signals_path) if x.endswith(".csv")]
-s_fnames = ["BE4A_1000Hz_20261010_121317.csv"]
+s_fnames = ["28F2_250Hz_20261010_145650.csv"]
 
 for s_filename in s_fnames:
     clean_fname = s_filename.split('.csv')[0]
@@ -53,6 +53,7 @@ for s_filename in s_fnames:
 
     # From now on, it's the standard part of the pipeline:
     dac_sym = sympathia_signals['AI2']
+    print(np.unique(dac_sym))
     eda_fingers = sympathia_signals['AI6']
     eda_wrist = sympathia_signals['AX7']
     nseq = sympathia_signals['NSeq']
@@ -92,8 +93,8 @@ for s_filename in s_fnames:
     fig, axes = plt.subplots(3, 1, figsize=(16, 6), sharex=True)
     fig.suptitle(f"Subject {s_filename}")
 
-    axes[0].plot(time_arr, normalize(eda_wrist), label="EDA Wrist")
-    axes[0].plot(time_arr, normalize(eda_fingers), label="EDA Fingers")
+    axes[0].plot(time_arr, eda_wrist, label="EDA Wrist") # normalize(eda_wrist)
+    #axes[0].plot(time_arr, normalize(eda_fingers), label="EDA Fingers")
     axes[0].set_ylabel("Norm. Amplitude [0-1]")
     # axes[0].set_ylabel("Conductance [$\\mu$S]")
     axes[0].set_title("EDA signals")
