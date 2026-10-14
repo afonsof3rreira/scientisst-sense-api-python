@@ -5,6 +5,9 @@ sense.py
 """
 
 import sys
+import os
+import re
+from datetime import datetime
 from scientisst import *
 from scientisst import __version__
 from threading import Timer
@@ -41,6 +44,24 @@ def main():
             arg_parser.error("No address provided")
 
     args.channels = sorted(map(int, args.channels.split(",")))
+    
+    device_names = { "COM12": "BE4A", "COM15": "28F2"}
+    # build output file path
+    if args.output:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        signals_dir = os.path.join(base_dir, "data", "signals")
+        os.makedirs(signals_dir, exist_ok=True)
+        
+        if args.output =="auto":
+            port = os.path.basename(address)
+            device_name = device_names.get(port.upper(), port)
+            device_name = re.sub(r"[^\w\-]", "_", device_name)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename ="{}_{}Hz_{}.csv".format(device_name, args.fs, timestamp)
+        else:
+            filename = os.path.basename(args.output)
+            
+        args.output = os.path.join(signals_dir, filename)
 
     scientisst = ScientISST(address, com_mode=args.mode, log=args.log)
 

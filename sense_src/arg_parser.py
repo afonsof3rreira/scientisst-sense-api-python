@@ -21,7 +21,7 @@ class ArgParser:
             "address",
             nargs="?",
             type=str,
-            default='/dev/tty.ScientISST-3A6', #COM17
+            default='COM15', # /dev/tty.ScientISST-3A6
             help="For BTH communication:\n\tLinux: BTH MAC address\n\tMac: serial port address\n\tWindows: BTH serial COM port\nFor TCP/UDP communication:\n\tAll plataforms: server port.",
         )
         self.parser.add_argument(
@@ -30,7 +30,7 @@ class ArgParser:
             dest="fs",
             help="sampling frequency, default: 1000",
             type=int,
-            default=1000,
+            default=250,
         )
         self.parser.add_argument(
             "-c",
@@ -44,17 +44,18 @@ class ArgParser:
             "-d",
             "--duration",
             dest="duration",
-            help="duration in seconds, default: unlimited",
+            help="duration in seconds, default: 240 s (4 min)",
             type=int,
-            default=200,
+            default=240, #duration of 4 min
         )
         self.parser.add_argument(
             "-o",
             "--output",
             dest="output",
-            help="write report to output file, default: None",
+            help="output file name (saved in data/signals). Default: auto-generated from device ans sampling frequency",
+            #"write report to output file, default: None",
             type=str,
-            default="output.csv",
+            default="auto",
         )
         self.parser.add_argument(
             "-r",
